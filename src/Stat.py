@@ -5,12 +5,19 @@ import time, datetime
 class Stat:
     def __init__(self, path):
         self.__path = path
+        self.__stat = None
+        self.Path = path
         #if not os.path.exists(str(self.__path)): raise ValueError('引数pathには存在するファイルかディレクトリを指定してください。')
-        self.__stat = os.stat(self.__path)
     @property
     def Stat(self): return self.__stat
     @property
     def Path(self): return self.__path
+    @Path.setter
+    def Path(self, v):
+        if os.path.exists(str(v)):
+        #if os.path.exists(str(v)) and str(v) != str(self.Path):
+            self.__path = v
+            self.__stat= os.stat(v)
     @property
     def Size(self): return self.GetSize(self.Path)
 

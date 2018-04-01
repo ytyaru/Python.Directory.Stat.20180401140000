@@ -4,10 +4,39 @@ from Stat import Stat
 class Directory(Stat):
     def __init__(self, path):
         super().__init__(path)
-        if not os.path.isdir(str(path)): raise ValueError('引数pathには存在するディレクトリを指定してください。path={}'.format(path))
+        #if os.path.isdir(str(path)): super().__init__(path)
+        #if not os.path.isdir(str(path)): raise ValueError('引数pathには存在するディレクトリを指定してください。path={}'.format(path))
     #def __getattr__(self, name):
     #    for n in dir(super()):
     #        if n == name: super().
+    def mk(self, path=None):
+        if path is None:
+            self.Create(self.Path)
+            self.Path = path
+        else:
+            if os.path.isabs(path):
+                if self.Path in path:
+                    self.Create(path)
+                    self.Path = path
+                else: raise ValueError('引数pathは未指定か次のパスの相対パス、または次のパス配下を指定してください。{}'.format(self.Path))
+            else:
+                self.Create(os.path.join(self.Path, path))
+                self.Path = path
+    def __make_first(self):
+        if self.Stat is None: self.Stat = path
+    def rm(self, path=None):
+        if path is None: self.Delete(self.Path)
+        else:
+            if os.path.isabs(path):
+                if self.Path in path: self.Delete(path)
+                else: raise ValueError('引数pathは未指定か次のパスの相対パス、または次のパス配下を指定してください。{}'.format(self.Path))
+            else: self.Delete(os.path.join(self.Path, path))
+    def cp(self, dst): return self.Copy(self.Path, dst)
+    def mv(self, dst):
+        self.__path = self.Move(self.__path, dst)
+        return self.__path
+    def pack(self, dst): return self.Archive(self.__path, dst)
+    def unpack(self, dst): self.UnArchive(self.__path, dst)
     @classmethod
     def IsExist(cls, path): return os.path.isdir(path)
     @classmethod

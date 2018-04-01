@@ -100,7 +100,131 @@ class DirectoryTest(unittest.TestCase):
         self.assertTrue(os.path.isfile('/tmp/work/__TEST__/A/a.txt'))
         Directory.Delete('/tmp/work/__TEST__')
         os.remove('/tmp/work/__TEST__.zip')
+    # ----------------------------
+    # インスタンスメソッド
+    # ----------------------------
+    def test_mk_rm(self):
+        target_root = '/tmp/work/__TEST__'
+        d = Directory(target_root)
+        self.assertTrue(not Directory.IsExist(target_root))
+        d.mk()
+        self.assertTrue(Directory.IsExist(target_root))
+        self.assertTrue(not Directory.IsExist(os.path.join(target_root, 'A')))
+        d.mk('A')
+        self.assertTrue(Directory.IsExist(os.path.join(target_root, 'A')))
+        self.assertTrue(not Directory.IsExist(os.path.join(target_root, 'B/BB/BBB')))
+        d.mk('B/BB/BBB')
+        self.assertTrue(Directory.IsExist(os.path.join(target_root, 'B/BB/BBB')))
+        self.assertTrue(not Directory.IsExist(os.path.join('/tmp/work/__TEST__/C')))
+        d.mk('/tmp/work/__TEST__/C')
+        self.assertTrue(Directory.IsExist(os.path.join('/tmp/work/__TEST__/C')))
+
+        d.rm('B/BB/BBB')
+        self.assertTrue(not Directory.IsExist(os.path.join(target_root, 'B/BB/BBB')))
+        self.assertTrue(Directory.IsExist(os.path.join(target_root, 'B/BB')))
+        d.rm('/tmp/work/__TEST__/B/BB')
+        self.assertTrue(not Directory.IsExist(os.path.join('/tmp/work/__TEST__/B/BB')))
+        d.rm(target_root)
+        self.assertTrue(not Directory.IsExist(target_root))
+
+    def test_mk_rm_raise(self):
+        target_root = '/tmp/work/__TEST__'
+        d = Directory(target_root)
+        self.assertTrue(not Directory.IsExist(target_root))
+        with self.assertRaises(ValueError) as e:
+            d.mk('/tmp/work/A')
+        self.assertEqual('引数pathは未指定か次のパスの相対パス、または次のパス配下を指定してください。{}'.format(target_root), e.exception.args[0])
+        with self.assertRaises(ValueError) as e:
+            d.rm('/tmp/work/A')
+        self.assertEqual('引数pathは未指定か次のパスの相対パス、または次のパス配下を指定してください。{}'.format(target_root), e.exception.args[0])
+
+    def test_cp_single(self):
+        target_root = '/tmp/work/__TEST__'
+        d = Directory(target_root)
+        self.assertTrue(not Directory.IsExist(target_root))
+        d.mk()
+        self.assertTrue(Directory.IsExist(target_root))
+        self.assertTrue(not Directory.IsExist('/tmp/work/__TEST_2__'))
+        res = d.cp('/tmp/work/__TEST_2__')
+        self.assertTrue(Directory.IsExist('/tmp/work/__TEST_2__'))
+        self.assertEqual('/tmp/work/__TEST_2__', res)
+        self.assertEqual('/tmp/work/__TEST__', d.Path)
+        d.rm()
+        Directory.Delete('/tmp/work/__TEST_2__')
+        self.assertTrue(not Directory.IsExist('/tmp/work/__TEST_2__'))
+        self.assertTrue(not Directory.IsExist('/tmp/work/__TEST__'))
+
+    """
+    def test_cp_tree(self):
+        target_root = '/tmp/work/__TEST__'
+        target_dummy = os.path.join(target_root, 'a.dummy')
+        self.__MakeDummy(target_dummy, 1024)
+        d = Directory(target_root)
+        self.assertEqual('/tmp/work/__TEST__', d.Path)
+
+        d.mk()
+
+        self.assertTrue(not Directory.IsExist(target_root))
+        Directory.Create(target)
+        Directory.Create(os.path.join(target, 'A'))
+        pathlib.Path(os.path.join(target, 'A/a.txt')).touch()
+        self.assertTrue(not Directory.IsExist('/tmp/work/__TEST_2__'))
+        Directory.Copy(target, '/tmp/work/__TEST_2__')
+        self.assertTrue(Directory.IsExist('/tmp/work/__TEST_2__'))
+        self.assertTrue(os.path.isfile('/tmp/work/__TEST_2__/A/a.txt'))
+        Directory.Delete(target)
+        Directory.Delete('/tmp/work/__TEST_2__')
     
+    def test_Move_single(self):
+        target = '/tmp/work/__TEST__'
+        self.assertTrue(not Directory.IsExist(target))
+        self.assertTrue(not Directory.IsExist('/tmp/work/__TEST_2__'))
+        Directory.Create(target)
+        Directory.Move(target, '/tmp/work/__TEST_2__')
+        self.assertTrue(not Directory.IsExist(target))
+        self.assertTrue(Directory.IsExist('/tmp/work/__TEST_2__'))
+        Directory.Delete('/tmp/work/__TEST_2__')
+
+    def test_Move_tree(self):
+        target = '/tmp/work/__TEST__'
+        self.assertTrue(not Directory.IsExist(target))
+        self.assertTrue(not Directory.IsExist('/tmp/work/__TEST_2__'))
+        Directory.Create(target)
+        Directory.Create(os.path.join(target, 'A'))
+        pathlib.Path(os.path.join(target, 'A/a.txt')).touch()
+        
+        Directory.Move(target, '/tmp/work/__TEST_2__')
+        self.assertTrue(not Directory.IsExist(target))
+        self.assertTrue(Directory.IsExist('/tmp/work/__TEST_2__'))
+        self.assertTrue(Directory.IsExist('/tmp/work/__TEST_2__/A'))
+        self.assertTrue(os.path.isfile('/tmp/work/__TEST_2__/A/a.txt'))
+        Directory.Delete('/tmp/work/__TEST_2__')
+
+    def test_Archive(self):
+         self.__make_archive()
+         os.remove('/tmp/work/__TEST__' + '.zip')
+
+    def __make_archive(self):
+        target = '/tmp/work/__TEST__'
+        self.assertTrue(not Directory.IsExist(target))
+        Directory.Create(target)
+        Directory.Create(os.path.join(target, 'A'))
+        pathlib.Path(os.path.join(target, 'A/a.txt')).touch()
+        
+        Directory.Archive(target, target + '.zip')
+        self.assertTrue(os.path.isfile(target + '.zip'))
+        Directory.Delete(target)
+
+    def test_UnArchive(self):
+        self.__make_archive()
+        self.assertTrue(not Directory.IsExist('/tmp/work/__TEST__'))
+        Directory.UnArchive('/tmp/work/__TEST__.zip')
+        self.assertTrue(Directory.IsExist('/tmp/work/__TEST__'))
+        self.assertTrue(Directory.IsExist('/tmp/work/__TEST__/A'))
+        self.assertTrue(os.path.isfile('/tmp/work/__TEST__/A/a.txt'))
+        Directory.Delete('/tmp/work/__TEST__')
+        os.remove('/tmp/work/__TEST__.zip')
+    """
     # ----------------------------
     # Stat
     # ----------------------------
