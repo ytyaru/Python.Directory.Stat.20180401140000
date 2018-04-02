@@ -16,12 +16,10 @@ class Directory(Stat):
     def __make_first(self, path):
         if self.Stat is None: self.Path = path
     def rm(self, path=None):
-        if path is None: self.Delete(self.Path)
-        else:
-            if os.path.isabs(path):
-                if self.Path in path: self.Delete(path)
-                else: raise ValueError('引数pathは未指定か次のパスの相対パス、または次のパス配下を指定してください。{}'.format(self.Path))
-            else: self.Delete(os.path.join(self.Path, path))
+        if path is not None and os.path.isabs(path) and self.Path not in path: raise ValueError('引数pathは未指定か次のパスの相対パス、または次のパス配下を指定してください。{}'.format(self.Path))
+        elif path is None: self.Delete(self.Path)
+        elif os.path.isabs(path): self.Delete(path)
+        else: self.Delete(os.path.join(self.Path, path))
     def cp(self, dst): return self.Copy(self.Path, dst)
     def mv(self, dst):
         self.Path = self.Move(self.Path, dst)
