@@ -3,27 +3,18 @@ from Stat import Stat
 
 class Directory(Stat):
     def __init__(self, path):
+        if not os.path.isabs(path): raise ValueError('引数pathは絶対パスにしてください。path=\'{}\''.format(path))
         super().__init__(path)
-        #if os.path.isdir(str(path)): super().__init__(path)
-        #if not os.path.isdir(str(path)): raise ValueError('引数pathには存在するディレクトリを指定してください。path={}'.format(path))
-    #def __getattr__(self, name):
-    #    for n in dir(super()):
-    #        if n == name: super().
+
     def mk(self, path=None):
-        if path is None:
-            self.Create(self.Path)
-            self.Path = path
-        else:
-            if os.path.isabs(path):
-                if self.Path in path:
-                    self.Create(path)
-                    self.Path = path
-                else: raise ValueError('引数pathは未指定か次のパスの相対パス、または次のパス配下を指定してください。{}'.format(self.Path))
-            else:
-                self.Create(os.path.join(self.Path, path))
-                self.Path = path
-    def __make_first(self):
-        if self.Stat is None: self.Stat = path
+        if path is not None and os.path.isabs(path) and self.Path not in path:
+            raise ValueError('引数pathは未指定か次のパスの相対パス、または次のパス配下を指定してください。{}'.format(self.Path))
+        elif path is None: self.Create(self.Path)
+        elif os.path.isabs(path): self.Create(path)
+        else: self.Create(os.path.join(self.Path, path))
+        self.__make_first(self.Path)
+    def __make_first(self, path):
+        if self.Stat is None: self.Path = path
     def rm(self, path=None):
         if path is None: self.Delete(self.Path)
         else:
@@ -33,10 +24,11 @@ class Directory(Stat):
             else: self.Delete(os.path.join(self.Path, path))
     def cp(self, dst): return self.Copy(self.Path, dst)
     def mv(self, dst):
-        self.__path = self.Move(self.__path, dst)
-        return self.__path
-    def pack(self, dst): return self.Archive(self.__path, dst)
-    def unpack(self, dst): self.UnArchive(self.__path, dst)
+        self.Path = self.Move(self.Path, dst)
+        return self.Path
+    def pack(self, dst): return self.Archive(self.Path, dst)
+    def unpack(self, src, dst=None): self.UnArchive(src, dst)
+
     @classmethod
     def IsExist(cls, path): return os.path.isdir(path)
     @classmethod
@@ -44,7 +36,8 @@ class Directory(Stat):
     @classmethod
     def Copy(cls, src, dst): return shutil.copytree(src, dst)
     @classmethod
-    def Delete(cls, path): shutil.rmtree(path)
+    def Delete(cls, path):
+        if cls.IsExist(path): shutil.rmtree(path)
     @classmethod
     def Move(cls, src, dst): return shutil.move(src, dst)
     @classmethod
@@ -58,4 +51,7 @@ class Directory(Stat):
         base_dir = tail
         return shutil.make_archive(base_name, ext, root_dir=root_dir, base_dir=base_dir)
     @classmethod
-    def UnArchive(cls, src, dst=None): shutil.unpack_archive(src, dst)
+    def UnArchive(cls, src, dst=None):
+        d = dst
+        if dst is None: d = os.path.dirname(src)
+        shutil.unpack_archive(src, d)
